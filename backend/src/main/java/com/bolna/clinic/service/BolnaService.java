@@ -46,7 +46,7 @@ public class BolnaService {
         try {
             Map<String, Object> body = new HashMap<>();
             body.put("agent_id", agentId);
-            body.put("recipient_phone_no", request.getPatientPhone());
+            body.put("recipient_phone_number", request.getPatientPhone());
 
             Map<String, String> userData = new HashMap<>();
             userData.put("patient_name", request.getPatientName());
