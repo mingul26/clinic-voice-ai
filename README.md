@@ -90,7 +90,7 @@ Dashboard UI              ──▶   REST API (port 8080)        ──▶   Vo
 
 ## Live Demo
 
-- **Frontend:** https://clinic-voice-ai.vercel.app
+- **Frontend:** https://clinic-voice-ai-tau.vercel.app
 - **Backend API:** https://clinic-voice-ai-production.up.railway.app/api/doctors
 
 ---
