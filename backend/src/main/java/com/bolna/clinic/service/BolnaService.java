@@ -71,7 +71,7 @@ public class BolnaService {
                 variables.put("doctor_specialization", doctor.getSpecialization());
             }
 
-            body.put("variables", variables);
+            body.put("user_data", variables);
 
             String json = objectMapper.writeValueAsString(body);
             log.info("Sending Bolna request to {}: {}", bolnaApiUrl, json);

@@ -8,14 +8,24 @@ public class BolnaWebhookPayload {
     @JsonProperty("call_id")
     private String callId;
 
+    // Bolna sends execution_id — use as fallback when call_id is absent
+    @JsonProperty("execution_id")
+    private String executionId;
+
     private String status;
 
     private Map<String, String> variables;
 
     private String transcript;
 
-    public String getCallId() { return callId; }
+    // Returns execution_id if call_id is null
+    public String getCallId() {
+        return callId != null ? callId : executionId;
+    }
     public void setCallId(String callId) { this.callId = callId; }
+
+    public String getExecutionId() { return executionId; }
+    public void setExecutionId(String executionId) { this.executionId = executionId; }
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
