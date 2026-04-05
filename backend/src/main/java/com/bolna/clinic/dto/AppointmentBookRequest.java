@@ -1,7 +1,11 @@
 package com.bolna.clinic.dto;
 
+import com.fasterxml.jackson.annotation.JsonSetter;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.temporal.ChronoField;
 
 public class AppointmentBookRequest {
 
@@ -16,6 +20,12 @@ public class AppointmentBookRequest {
 
     private String bolnaCallId;
 
+    private static final DateTimeFormatter FLEXIBLE = new DateTimeFormatterBuilder()
+            .appendPattern("yyyy-MM-dd'T'HH:mm")
+            .optionalStart().appendPattern(":ss").optionalEnd()
+            .parseDefaulting(ChronoField.SECOND_OF_MINUTE, 0)
+            .toFormatter();
+
     public Long getPatientId() { return patientId; }
     public void setPatientId(Long patientId) { this.patientId = patientId; }
 
@@ -23,6 +33,12 @@ public class AppointmentBookRequest {
     public void setDoctorId(Long doctorId) { this.doctorId = doctorId; }
 
     public LocalDateTime getSlotTime() { return slotTime; }
+
+    @JsonSetter("slotTime")
+    public void setSlotTime(String slotTime) {
+        this.slotTime = LocalDateTime.parse(slotTime, FLEXIBLE);
+    }
+
     public void setSlotTime(LocalDateTime slotTime) { this.slotTime = slotTime; }
 
     public String getBolnaCallId() { return bolnaCallId; }

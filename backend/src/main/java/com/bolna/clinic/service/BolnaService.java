@@ -1,6 +1,7 @@
 package com.bolna.clinic.service;
 
 import com.bolna.clinic.dto.OutboundCallRequest;
+import com.bolna.clinic.entity.Doctor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,15 +29,19 @@ public class BolnaService {
     @Value("${bolna.api.url}")
     private String bolnaApiUrl;
 
-    private final HttpClient httpClient = HttpClient.newHttpClient();
+    /**
+     * The verified phone number registered in Bolna account.
+     * For demo, all outbound calls ring this number regardless of patient phone.
+     */
+    @Value("${bolna.verified.number:}")
+    private String verifiedNumber;
+
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .connectTimeout(java.time.Duration.ofSeconds(10))
+            .build();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    /**
-     * Fires an outbound call via the Bolna API.
-     *
-     * @return the call_id returned by Bolna, or a mock ID when apiKey is blank
-     */
-    public String initiateCall(OutboundCallRequest request) {
+    public String initiateCall(OutboundCallRequest request, Doctor doctor) {
         if (apiKey == null || apiKey.isBlank()) {
             String mockId = "mock-call-" + System.currentTimeMillis();
             log.warn("BOLNA_API_KEY not set — returning mock call id: {}", mockId);
@@ -44,36 +49,52 @@ public class BolnaService {
         }
 
         try {
+            // Use verified number for demo; fall back to patient phone if not set
+            String recipientPhone = (verifiedNumber != null && !verifiedNumber.isBlank())
+                    ? verifiedNumber
+                    : request.getPatientPhone();
+
             Map<String, Object> body = new HashMap<>();
             body.put("agent_id", agentId);
-            body.put("recipient_phone_number", request.getPatientPhone());
+            body.put("recipient_phone_number", recipientPhone);
 
-            Map<String, String> userData = new HashMap<>();
-            userData.put("patient_name", request.getPatientName());
-            userData.put("language", request.getLanguage());
-            if (request.getDoctorId() != null) {
-                userData.put("doctor_id", String.valueOf(request.getDoctorId()));
+            Map<String, String> variables = new HashMap<>();
+            variables.put("patient_name", request.getPatientName());
+            variables.put("patient_id", String.valueOf(request.getPatientId()));
+            variables.put("language", request.getLanguage());
+            variables.put("call_reason", toSnakeCase(request.getCallReason().name()));
+            variables.put("context", request.getContext() != null ? request.getContext() : "");
+
+            if (doctor != null) {
+                variables.put("doctor_name", doctor.getName());
+                variables.put("doctor_id", String.valueOf(doctor.getId()));
+                variables.put("doctor_specialization", doctor.getSpecialization());
             }
-            body.put("user_data", userData);
+
+            body.put("variables", variables);
 
             String json = objectMapper.writeValueAsString(body);
+            log.info("Sending Bolna request to {}: {}", bolnaApiUrl, json);
 
             HttpRequest httpRequest = HttpRequest.newBuilder()
                     .uri(URI.create(bolnaApiUrl))
                     .header("Content-Type", "application/json")
                     .header("Authorization", "Bearer " + apiKey)
+                    .timeout(java.time.Duration.ofSeconds(15))
                     .POST(HttpRequest.BodyPublishers.ofString(json))
                     .build();
 
+            log.info("Firing HTTP request to Bolna...");
             HttpResponse<String> response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+            log.info("Bolna responded with status={} body={}", response.statusCode(), response.body());
 
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 Map<?, ?> responseBody = objectMapper.readValue(response.body(), Map.class);
                 String callId = (String) responseBody.get("call_id");
-                log.info("Bolna call initiated successfully, call_id={}", callId);
+                log.info("Bolna call initiated, call_id={}", callId);
                 return callId;
             } else {
-                log.error("Bolna API returned error {}: {}", response.statusCode(), response.body());
+                log.error("Bolna API error {}: {}", response.statusCode(), response.body());
                 throw new RuntimeException("Bolna API error: " + response.statusCode() + " — " + response.body());
             }
         } catch (RuntimeException e) {
@@ -81,5 +102,9 @@ public class BolnaService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to initiate Bolna call: " + e.getMessage(), e);
         }
+    }
+
+    private String toSnakeCase(String enumName) {
+        return enumName.toLowerCase().replace('_', '_');
     }
 }
