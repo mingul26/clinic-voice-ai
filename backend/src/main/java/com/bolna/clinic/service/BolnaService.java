@@ -89,9 +89,14 @@ public class BolnaService {
             log.info("Bolna responded with status={} body={}", response.statusCode(), response.body());
 
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
-                Map<?, ?> responseBody = objectMapper.readValue(response.body(), Map.class);
-                String callId = (String) responseBody.get("call_id");
-                log.info("Bolna call initiated, call_id={}", callId);
+                @SuppressWarnings("unchecked")
+                Map<String, Object> responseBody = objectMapper.readValue(response.body(), Map.class);
+                // Bolna returns execution_id on success
+                Object idObj = responseBody.containsKey("execution_id")
+                        ? responseBody.get("execution_id")
+                        : responseBody.getOrDefault("call_id", "unknown-" + System.currentTimeMillis());
+                String callId = String.valueOf(idObj);
+                log.info("Bolna call queued, execution_id={}", callId);
                 return callId;
             } else {
                 log.error("Bolna API error {}: {}", response.statusCode(), response.body());
