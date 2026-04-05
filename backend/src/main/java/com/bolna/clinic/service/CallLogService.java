@@ -1,11 +1,7 @@
 package com.bolna.clinic.service;
 
-import com.bolna.clinic.dto.AppointmentBookRequest;
 import com.bolna.clinic.dto.BolnaWebhookPayload;
-import com.bolna.clinic.entity.Appointment;
 import com.bolna.clinic.entity.CallLog;
-import com.bolna.clinic.entity.Doctor;
-import com.bolna.clinic.entity.Patient;
 import com.bolna.clinic.repository.AppointmentRepository;
 import com.bolna.clinic.repository.CallLogRepository;
 import com.bolna.clinic.repository.DoctorRepository;
@@ -18,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @Service
 public class CallLogService {
@@ -32,10 +27,10 @@ public class CallLogService {
     private final AppointmentService appointmentService;
 
     public CallLogService(CallLogRepository callLogRepository,
-                          AppointmentRepository appointmentRepository,
-                          PatientRepository patientRepository,
-                          DoctorRepository doctorRepository,
-                          AppointmentService appointmentService) {
+            AppointmentRepository appointmentRepository,
+            PatientRepository patientRepository,
+            DoctorRepository doctorRepository,
+            AppointmentService appointmentService) {
         this.callLogRepository = callLogRepository;
         this.appointmentRepository = appointmentRepository;
         this.patientRepository = patientRepository;
@@ -78,7 +73,8 @@ public class CallLogService {
                         try {
                             patientRepository.findById(Long.parseLong(patientIdStr))
                                     .ifPresent(callLog::setPatient);
-                        } catch (NumberFormatException ignored) {}
+                        } catch (NumberFormatException ignored) {
+                        }
                     }
                 }
                 if (callLog.getDoctor() == null) {
@@ -87,7 +83,8 @@ public class CallLogService {
                         try {
                             doctorRepository.findById(Long.parseLong(doctorIdStr))
                                     .ifPresent(callLog::setDoctor);
-                        } catch (NumberFormatException ignored) {}
+                        } catch (NumberFormatException ignored) {
+                        }
                     }
                 }
             }

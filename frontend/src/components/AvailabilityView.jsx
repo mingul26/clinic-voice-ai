@@ -32,12 +32,14 @@ export default function AvailabilityView({ onToast }) {
   }
 
   function formatSlot(iso) {
-    return new Date(iso).toLocaleString('en-IN', {
+    const utc = iso.endsWith('Z') ? iso : iso + 'Z'
+    return new Date(utc).toLocaleString('en-IN', {
       weekday: 'short',
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
+      timeZone: 'Asia/Kolkata',
     })
   }
 
@@ -130,24 +132,16 @@ export default function AvailabilityView({ onToast }) {
                   <th>#</th>
                   <th>Name</th>
                   <th>Specialization</th>
-                  <th>Total Slots</th>
                 </tr>
               </thead>
               <tbody>
-                {doctors.map((d) => {
-                  let count = 0
-                  try { count = JSON.parse(d.availableSlots || '[]').length } catch {}
-                  return (
-                    <tr key={d.id} style={{ cursor: 'pointer' }} onClick={() => setDoctorId(String(d.id))}>
-                      <td style={{ color: 'var(--text-muted)' }}>{d.id}</td>
-                      <td>{d.name}</td>
-                      <td style={{ color: 'var(--text-secondary)' }}>{d.specialization}</td>
-                      <td>
-                        <span className="badge badge-confirmed">{count}</span>
-                      </td>
-                    </tr>
-                  )
-                })}
+                {doctors.map((d) => (
+                  <tr key={d.id} style={{ cursor: 'pointer' }} onClick={() => setDoctorId(String(d.id))}>
+                    <td style={{ color: 'var(--text-muted)' }}>{d.id}</td>
+                    <td>{d.name}</td>
+                    <td style={{ color: 'var(--text-secondary)' }}>{d.specialization}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

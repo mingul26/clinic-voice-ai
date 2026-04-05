@@ -16,17 +16,7 @@ public class Doctor {
     @Column(nullable = false)
     private String specialization;
 
-    @Column(name = "available_slots", columnDefinition = "TEXT")
-    private String availableSlots;
-
     public Doctor() {}
-
-    public Doctor(Long id, String name, String specialization, String availableSlots) {
-        this.id = id;
-        this.name = name;
-        this.specialization = specialization;
-        this.availableSlots = availableSlots;
-    }
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -36,7 +26,4 @@ public class Doctor {
 
     public String getSpecialization() { return specialization; }
     public void setSpecialization(String specialization) { this.specialization = specialization; }
-
-    public String getAvailableSlots() { return availableSlots; }
-    public void setAvailableSlots(String availableSlots) { this.availableSlots = availableSlots; }
 }

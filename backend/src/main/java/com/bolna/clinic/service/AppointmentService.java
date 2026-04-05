@@ -3,13 +3,13 @@ package com.bolna.clinic.service;
 import com.bolna.clinic.dto.AppointmentBookRequest;
 import com.bolna.clinic.entity.Appointment;
 import com.bolna.clinic.entity.Doctor;
+import com.bolna.clinic.entity.DoctorSlot;
 import com.bolna.clinic.entity.Patient;
 import com.bolna.clinic.exception.ResourceNotFoundException;
 import com.bolna.clinic.repository.AppointmentRepository;
 import com.bolna.clinic.repository.DoctorRepository;
+import com.bolna.clinic.repository.DoctorSlotRepository;
 import com.bolna.clinic.repository.PatientRepository;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -17,9 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class AppointmentService {
@@ -29,14 +27,16 @@ public class AppointmentService {
     private final AppointmentRepository appointmentRepository;
     private final PatientRepository patientRepository;
     private final DoctorRepository doctorRepository;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final DoctorSlotRepository doctorSlotRepository;
 
     public AppointmentService(AppointmentRepository appointmentRepository,
                                PatientRepository patientRepository,
-                               DoctorRepository doctorRepository) {
+                               DoctorRepository doctorRepository,
+                               DoctorSlotRepository doctorSlotRepository) {
         this.appointmentRepository = appointmentRepository;
         this.patientRepository = patientRepository;
         this.doctorRepository = doctorRepository;
+        this.doctorSlotRepository = doctorSlotRepository;
     }
 
     public List<Appointment> getAllAppointments() {
@@ -51,15 +51,20 @@ public class AppointmentService {
         Doctor doctor = doctorRepository.findById(request.getDoctorId())
                 .orElseThrow(() -> new ResourceNotFoundException("Doctor not found: " + request.getDoctorId()));
 
+        // Mark the slot as taken
+        doctorSlotRepository
+                .findByDoctorIdAndSlotTimeAndAvailableTrue(doctor.getId(), request.getSlotTime())
+                .ifPresentOrElse(
+                        slot -> { slot.setAvailable(false); doctorSlotRepository.save(slot); },
+                        () -> log.warn("Slot {} not found or already taken for doctor {}", request.getSlotTime(), doctor.getId())
+                );
+
         Appointment appointment = new Appointment();
         appointment.setPatient(patient);
         appointment.setDoctor(doctor);
         appointment.setSlotTime(request.getSlotTime());
         appointment.setStatus(Appointment.AppointmentStatus.CONFIRMED);
         appointment.setBolnaCallId(request.getBolnaCallId());
-
-        // Remove the booked slot from doctor's available slots
-        removeSlotFromDoctor(doctor, request.getSlotTime());
 
         Appointment saved = appointmentRepository.save(appointment);
         log.info("Appointment booked: id={}, patient={}, doctor={}, slot={}",
@@ -71,51 +76,40 @@ public class AppointmentService {
     public Appointment updateStatus(Long id, Appointment.AppointmentStatus status) {
         Appointment appointment = appointmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Appointment not found: " + id));
+
+        // Restore the slot when appointment is cancelled
+        if (status == Appointment.AppointmentStatus.CANCELLED) {
+            doctorSlotRepository
+                    .findByDoctorIdAndSlotTimeAndAvailableTrue(
+                            appointment.getDoctor().getId(), appointment.getSlotTime())
+                    .ifPresentOrElse(
+                            s -> {},  // already available, nothing to do
+                            () -> doctorSlotRepository
+                                    .findByDoctorIdAndSlotTime(
+                                            appointment.getDoctor().getId(), appointment.getSlotTime())
+                                    .ifPresent(s -> { s.setAvailable(true); doctorSlotRepository.save(s); })
+                    );
+        }
+
         appointment.setStatus(status);
         return appointmentRepository.save(appointment);
     }
 
     public List<String> getAvailableSlots(Long doctorId, LocalDate date) {
-        Doctor doctor = doctorRepository.findById(doctorId)
+        doctorRepository.findById(doctorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Doctor not found: " + doctorId));
 
-        List<String> allSlots = parseSlotsJson(doctor.getAvailableSlots());
-
-        if (date == null) {
-            return allSlots;
+        List<DoctorSlot> slots;
+        if (date != null) {
+            LocalDateTime from = date.atStartOfDay();
+            LocalDateTime to = date.atTime(23, 59, 59);
+            slots = doctorSlotRepository.findByDoctorIdAndSlotTimeBetweenAndAvailableTrueOrderBySlotTimeAsc(doctorId, from, to);
+        } else {
+            slots = doctorSlotRepository.findByDoctorIdAndAvailableTrueOrderBySlotTimeAsc(doctorId);
         }
 
-        return allSlots.stream()
-                .filter(slot -> {
-                    try {
-                        LocalDateTime dt = LocalDateTime.parse(slot);
-                        return dt.toLocalDate().equals(date);
-                    } catch (Exception e) {
-                        return false;
-                    }
-                })
-                .collect(Collectors.toList());
-    }
-
-    private void removeSlotFromDoctor(Doctor doctor, LocalDateTime slot) {
-        try {
-            List<String> slots = parseSlotsJson(doctor.getAvailableSlots());
-            String slotStr = slot.toString();
-            slots.remove(slotStr);
-            doctor.setAvailableSlots(objectMapper.writeValueAsString(slots));
-            doctorRepository.save(doctor);
-        } catch (Exception e) {
-            log.warn("Could not remove slot from doctor availability: {}", e.getMessage());
-        }
-    }
-
-    private List<String> parseSlotsJson(String json) {
-        if (json == null || json.isBlank()) return Collections.emptyList();
-        try {
-            return objectMapper.readValue(json, new TypeReference<List<String>>() {});
-        } catch (Exception e) {
-            log.warn("Failed to parse doctor slots JSON: {}", e.getMessage());
-            return Collections.emptyList();
-        }
+        return slots.stream()
+                .map(s -> s.getSlotTime().toString())
+                .toList();
     }
 }
