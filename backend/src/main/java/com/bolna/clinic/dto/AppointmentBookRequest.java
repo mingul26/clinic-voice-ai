@@ -3,6 +3,8 @@ package com.bolna.clinic.dto;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoField;
@@ -34,9 +36,19 @@ public class AppointmentBookRequest {
 
     public LocalDateTime getSlotTime() { return slotTime; }
 
+    private static final ZoneOffset IST = ZoneOffset.ofHoursMinutes(5, 30);
+
     @JsonSetter("slotTime")
     public void setSlotTime(String slotTime) {
-        this.slotTime = LocalDateTime.parse(slotTime, FLEXIBLE);
+        // If the value includes a timezone offset (e.g. +05:30 or Z), parse as OffsetDateTime
+        // and convert to IST-local so it matches slots stored in the DB
+        if (slotTime.contains("+") || slotTime.endsWith("Z")) {
+            this.slotTime = OffsetDateTime.parse(slotTime)
+                    .withOffsetSameInstant(IST)
+                    .toLocalDateTime();
+        } else {
+            this.slotTime = LocalDateTime.parse(slotTime, FLEXIBLE);
+        }
     }
 
     public void setSlotTime(LocalDateTime slotTime) { this.slotTime = slotTime; }

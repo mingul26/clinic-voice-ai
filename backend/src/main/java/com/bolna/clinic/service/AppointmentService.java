@@ -128,7 +128,9 @@ public class AppointmentService {
         }
 
         return slots.stream()
-                .map(s -> s.getSlotTime().toString())
+                .map(s -> s.getSlotTime().atOffset(IST_OFFSET).toString())
                 .toList();
     }
+
+    private static final java.time.ZoneOffset IST_OFFSET = java.time.ZoneOffset.ofHoursMinutes(5, 30);
 }

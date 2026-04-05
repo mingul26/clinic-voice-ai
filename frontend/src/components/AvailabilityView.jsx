@@ -32,8 +32,10 @@ export default function AvailabilityView({ onToast }) {
   }
 
   function formatSlot(iso) {
-    const utc = iso.endsWith('Z') ? iso : iso + 'Z'
-    return new Date(utc).toLocaleString('en-IN', {
+    // Slots from API include +05:30 offset — parse directly, no Z append needed
+    const hasOffset = iso.includes('+') || iso.endsWith('Z')
+    const normalized = hasOffset ? iso : iso + 'Z'
+    return new Date(normalized).toLocaleString('en-IN', {
       weekday: 'short',
       month: 'short',
       day: 'numeric',
