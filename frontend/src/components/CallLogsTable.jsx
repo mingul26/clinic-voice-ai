@@ -9,7 +9,9 @@ const STATUS_BADGE = {
 
 function formatDate(iso) {
   if (!iso) return '—'
-  return new Date(iso).toLocaleString('en-IN', {
+  // Append Z so the browser treats the server's UTC datetime as UTC (not local)
+  const utc = iso.endsWith('Z') ? iso : iso + 'Z'
+  return new Date(utc).toLocaleString('en-IN', {
     dateStyle: 'medium',
     timeStyle: 'short',
     timeZone: 'Asia/Kolkata',
@@ -82,8 +84,7 @@ export default function CallLogsTable({ onToast }) {
                   <th>Call ID</th>
                   <th>Status</th>
                   <th>Patient</th>
-                  <th>Doctor</th>
-                  <th>Booked Slot</th>
+                  <th>Mobile</th>
                   <th>Time</th>
                   <th>Transcript</th>
                 </tr>
@@ -102,13 +103,8 @@ export default function CallLogsTable({ onToast }) {
                         </span>
                       </td>
                       <td>{log.patient?.name || log.appointment?.patient?.name || '—'}</td>
-                      <td>{log.doctor?.name || log.appointment?.doctor?.name || '—'}</td>
-                      <td>
-                        {log.appointment?.slotTime
-                          ? new Date(log.appointment.slotTime).toLocaleString('en-IN', {
-                              dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata',
-                            })
-                          : '—'}
+                      <td style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--text-secondary)' }}>
+                        {log.patient?.phone || log.appointment?.patient?.phone || '—'}
                       </td>
                       <td>{formatDate(log.createdAt)}</td>
                       <td>
@@ -125,7 +121,7 @@ export default function CallLogsTable({ onToast }) {
                     </tr>
                     {expanded === log.id && (
                       <tr key={`${log.id}-transcript`}>
-                        <td colSpan={8} style={{ padding: '0 14px 14px' }}>
+                        <td colSpan={7} style={{ padding: '0 14px 14px' }}>
                           <div className="transcript-box">{log.transcript}</div>
                         </td>
                       </tr>
