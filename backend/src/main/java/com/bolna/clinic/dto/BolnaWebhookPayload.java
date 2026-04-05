@@ -1,50 +1,60 @@
 package com.bolna.clinic.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Map;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class BolnaWebhookPayload {
 
-    @JsonProperty("call_id")
-    private String callId;
-
-    // Bolna sends execution_id — use as fallback when call_id is absent
-    @JsonProperty("execution_id")
-    private String executionId;
+    // Bolna sends the call identifier as "id"
+    @JsonProperty("id")
+    private String id;
 
     private String status;
 
-    private Map<String, String> variables;
-
     private String transcript;
 
-    // Returns execution_id if call_id is null
-    public String getCallId() {
-        return callId != null ? callId : executionId;
-    }
-    public void setCallId(String callId) { this.callId = callId; }
+    @JsonProperty("context_details")
+    private ContextDetails contextDetails;
 
-    public String getExecutionId() { return executionId; }
-    public void setExecutionId(String executionId) { this.executionId = executionId; }
+    public String getCallId() {
+        return id;
+    }
+    public void setId(String id) { this.id = id; }
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
 
-    public Map<String, String> getVariables() { return variables; }
-    public void setVariables(Map<String, String> variables) { this.variables = variables; }
-
     public String getTranscript() { return transcript; }
     public void setTranscript(String transcript) { this.transcript = transcript; }
 
+    public ContextDetails getContextDetails() { return contextDetails; }
+    public void setContextDetails(ContextDetails contextDetails) { this.contextDetails = contextDetails; }
+
+    // Helpers used by CallLogService
     public String getPatientName() {
-        return variables != null ? variables.get("patient_name") : null;
+        return getRecipientData() != null ? getRecipientData().get("patient_name") : null;
     }
 
     public String getDoctorPreference() {
-        return variables != null ? variables.get("doctor_preference") : null;
+        return getRecipientData() != null ? getRecipientData().get("doctor_name") : null;
     }
 
     public String getSlotPreference() {
-        return variables != null ? variables.get("slot_preference") : null;
+        return getRecipientData() != null ? getRecipientData().get("slot_preference") : null;
+    }
+
+    private Map<String, String> getRecipientData() {
+        return contextDetails != null ? contextDetails.getRecipientData() : null;
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class ContextDetails {
+        @JsonProperty("recipient_data")
+        private Map<String, String> recipientData;
+
+        public Map<String, String> getRecipientData() { return recipientData; }
+        public void setRecipientData(Map<String, String> recipientData) { this.recipientData = recipientData; }
     }
 }
