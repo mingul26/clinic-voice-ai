@@ -32,8 +32,11 @@ public class AvailabilityController {
     @GetMapping("/availability")
     public ResponseEntity<Map<String, Object>> getAvailability(
             @RequestParam Long doctorId,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        List<String> slots = appointmentService.getAvailableSlots(doctorId, date);
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(required = false, defaultValue = "false") boolean asap) {
+        List<String> slots = appointmentService.getAvailableSlots(doctorId, date, from, to, asap);
         return ResponseEntity.ok(Map.of("doctorId", doctorId, "slots", slots));
     }
 

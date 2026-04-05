@@ -95,17 +95,36 @@ public class AppointmentService {
         return appointmentRepository.save(appointment);
     }
 
-    public List<String> getAvailableSlots(Long doctorId, LocalDate date) {
+    public List<String> getAvailableSlots(Long doctorId, LocalDate date,
+                                          LocalDate from, LocalDate to, boolean asap) {
         doctorRepository.findById(doctorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Doctor not found: " + doctorId));
 
         List<DoctorSlot> slots;
-        if (date != null) {
-            LocalDateTime from = date.atStartOfDay();
-            LocalDateTime to = date.atTime(23, 59, 59);
-            slots = doctorSlotRepository.findByDoctorIdAndSlotTimeBetweenAndAvailableTrueOrderBySlotTimeAsc(doctorId, from, to);
+
+        if (asap) {
+            // Return only the single next available slot
+            slots = doctorSlotRepository
+                    .findByDoctorIdAndAvailableTrueOrderBySlotTimeAsc(doctorId)
+                    .stream()
+                    .filter(s -> s.getSlotTime().isAfter(LocalDateTime.now()))
+                    .limit(1)
+                    .toList();
+        } else if (from != null && to != null) {
+            // Date range
+            slots = doctorSlotRepository.findByDoctorIdAndSlotTimeBetweenAndAvailableTrueOrderBySlotTimeAsc(
+                    doctorId, from.atStartOfDay(), to.atTime(23, 59, 59));
+        } else if (date != null) {
+            // Single date
+            slots = doctorSlotRepository.findByDoctorIdAndSlotTimeBetweenAndAvailableTrueOrderBySlotTimeAsc(
+                    doctorId, date.atStartOfDay(), date.atTime(23, 59, 59));
         } else {
-            slots = doctorSlotRepository.findByDoctorIdAndAvailableTrueOrderBySlotTimeAsc(doctorId);
+            // All upcoming slots
+            slots = doctorSlotRepository
+                    .findByDoctorIdAndAvailableTrueOrderBySlotTimeAsc(doctorId)
+                    .stream()
+                    .filter(s -> s.getSlotTime().isAfter(LocalDateTime.now()))
+                    .toList();
         }
 
         return slots.stream()
