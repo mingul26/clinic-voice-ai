@@ -15,6 +15,14 @@ public class CallLog {
     @JoinColumn(name = "appointment_id")
     private Appointment appointment;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "patient_id")
+    private Patient patient;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "doctor_id")
+    private Doctor doctor;
+
     @Column(name = "bolna_call_id")
     private String bolnaCallId;
 
@@ -34,6 +42,12 @@ public class CallLog {
 
     public Appointment getAppointment() { return appointment; }
     public void setAppointment(Appointment appointment) { this.appointment = appointment; }
+
+    public Patient getPatient() { return patient; }
+    public void setPatient(Patient patient) { this.patient = patient; }
+
+    public Doctor getDoctor() { return doctor; }
+    public void setDoctor(Doctor doctor) { this.doctor = doctor; }
 
     public String getBolnaCallId() { return bolnaCallId; }
     public void setBolnaCallId(String bolnaCallId) { this.bolnaCallId = bolnaCallId; }

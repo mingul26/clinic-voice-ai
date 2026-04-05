@@ -45,7 +45,7 @@ public class BolnaWebhookPayload {
         return getRecipientData() != null ? getRecipientData().get("slot_preference") : null;
     }
 
-    private Map<String, String> getRecipientData() {
+    public Map<String, String> getRecipientData() {
         return contextDetails != null ? contextDetails.getRecipientData() : null;
     }
 

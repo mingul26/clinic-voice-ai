@@ -101,8 +101,8 @@ export default function CallLogsTable({ onToast }) {
                           {log.status}
                         </span>
                       </td>
-                      <td>{log.appointment?.patient?.name || '—'}</td>
-                      <td>{log.appointment?.doctor?.name || '—'}</td>
+                      <td>{log.patient?.name || log.appointment?.patient?.name || '—'}</td>
+                      <td>{log.doctor?.name || log.appointment?.doctor?.name || '—'}</td>
                       <td>
                         {log.appointment?.slotTime
                           ? new Date(log.appointment.slotTime).toLocaleString('en-IN', {
