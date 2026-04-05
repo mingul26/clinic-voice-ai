@@ -24,7 +24,16 @@ public class WebhookController {
 
     @PostMapping("/bolna")
     public ResponseEntity<Map<String, Object>> handleBolnaWebhook(
-            @RequestBody BolnaWebhookPayload payload) {
+            @RequestBody(required = false) String rawBody) {
+        log.info("Received Bolna webhook raw body: {}", rawBody);
+        BolnaWebhookPayload payload;
+        try {
+            payload = new com.fasterxml.jackson.databind.ObjectMapper()
+                    .readValue(rawBody, BolnaWebhookPayload.class);
+        } catch (Exception e) {
+            log.error("Failed to parse webhook body: {}", e.getMessage());
+            return ResponseEntity.ok(Map.of("received", true));
+        }
         log.info("Received Bolna webhook: call_id={}, status={}", payload.getCallId(), payload.getStatus());
         CallLog callLog = callLogService.processWebhook(payload);
         return ResponseEntity.ok(Map.of(
