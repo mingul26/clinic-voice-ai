@@ -12,6 +12,7 @@ function formatDate(iso) {
   return new Date(iso).toLocaleString('en-IN', {
     dateStyle: 'medium',
     timeStyle: 'short',
+    timeZone: 'Asia/Kolkata',
   })
 }
 
@@ -105,7 +106,7 @@ export default function CallLogsTable({ onToast }) {
                       <td>
                         {log.appointment?.slotTime
                           ? new Date(log.appointment.slotTime).toLocaleString('en-IN', {
-                              dateStyle: 'medium', timeStyle: 'short',
+                              dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata',
                             })
                           : '—'}
                       </td>

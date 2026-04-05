@@ -13,6 +13,7 @@ function formatSlot(iso) {
   return new Date(iso).toLocaleString('en-IN', {
     dateStyle: 'medium',
     timeStyle: 'short',
+    timeZone: 'Asia/Kolkata',
   })
 }
 
