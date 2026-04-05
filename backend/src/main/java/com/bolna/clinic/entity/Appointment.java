@@ -1,7 +1,10 @@
 package com.bolna.clinic.entity;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @Entity
 @Table(name = "appointment")
@@ -44,8 +47,16 @@ public class Appointment {
     public Doctor getDoctor() { return doctor; }
     public void setDoctor(Doctor doctor) { this.doctor = doctor; }
 
+    private static final ZoneOffset IST = ZoneOffset.ofHoursMinutes(5, 30);
+
+    @JsonIgnore
     public LocalDateTime getSlotTime() { return slotTime; }
     public void setSlotTime(LocalDateTime slotTime) { this.slotTime = slotTime; }
+
+    @JsonGetter("slotTime")
+    public String getSlotTimeIst() {
+        return slotTime == null ? null : slotTime.atOffset(IST).toString();
+    }
 
     public AppointmentStatus getStatus() { return status; }
     public void setStatus(AppointmentStatus status) { this.status = status; }

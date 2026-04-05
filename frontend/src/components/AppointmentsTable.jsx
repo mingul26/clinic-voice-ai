@@ -10,8 +10,9 @@ const STATUS_BADGE = {
 
 function formatSlot(iso) {
   if (!iso) return '—'
-  const utc = iso.endsWith('Z') ? iso : iso + 'Z'
-  return new Date(utc).toLocaleString('en-IN', {
+  const hasOffset = iso.includes('+') || iso.endsWith('Z')
+  const normalized = hasOffset ? iso : iso + 'Z'
+  return new Date(normalized).toLocaleString('en-IN', {
     dateStyle: 'medium',
     timeStyle: 'short',
     timeZone: 'Asia/Kolkata',
